@@ -38,7 +38,7 @@ export const Route = createFileRoute("/api/preview/$jobId/$")({
           );
         }
 
-        return new Response(file.data, {
+        return new Response(file.data as BodyInit, {
           status: 200,
           headers: {
             "content-type": guessContentType(path, file.contentType),
