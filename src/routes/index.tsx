@@ -138,31 +138,31 @@ function Index() {
       <div className="absolute inset-0 -z-10" style={{ background: "var(--gradient-hero)" }} />
       <div className="absolute inset-0 -z-10 bg-background/60" />
 
-      <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-16 max-w-6xl">
-        <div className="text-center mb-8 sm:mb-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full bg-card/60 border border-border backdrop-blur-sm mb-4 sm:mb-6">
+      <div className="container mx-auto px-4 py-12 md:py-16 max-w-6xl">
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-card/60 border border-border backdrop-blur-sm mb-6">
             <Sparkles className="w-3.5 h-3.5 text-primary" />
-            <span className="text-[11px] sm:text-xs font-medium text-muted-foreground">Live preview · Powered by Firecrawl</span>
+            <span className="text-xs font-medium text-muted-foreground">Live preview · Powered by Firecrawl</span>
           </div>
-          <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight mb-3 sm:mb-4 leading-[1.05]">
+          <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-4">
             <span className="bg-clip-text text-transparent" style={{ backgroundImage: "var(--gradient-primary)" }}>
               Clone any website
             </span>
             <br />
             <span className="text-foreground">watch it live.</span>
           </h1>
-          <p className="text-base sm:text-lg text-muted-foreground max-w-xl mx-auto px-2">
+          <p className="text-lg text-muted-foreground max-w-xl mx-auto">
             Crawl pages, assets, fonts, media. Preview as it builds. Download a runnable ZIP.
           </p>
         </div>
 
-        <Card className="p-4 sm:p-6 md:p-8 backdrop-blur-xl bg-card/70 border-border" style={{ boxShadow: "var(--shadow-card)" }}>
-          <div className="space-y-5 sm:space-y-6">
+        <Card className="p-6 md:p-8 backdrop-blur-xl bg-card/70 border-border" style={{ boxShadow: "var(--shadow-card)" }}>
+          <div className="space-y-6">
             <div>
               <Label htmlFor="url" className="mb-2 flex items-center gap-2">
                 <Globe className="w-4 h-4" /> Website URL
               </Label>
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex gap-2">
                 <Input
                   id="url"
                   placeholder="example.com"
@@ -176,7 +176,7 @@ function Index() {
                   onClick={handleStart}
                   disabled={starting || status?.status === "running"}
                   size="lg"
-                  className="h-12 px-6 font-semibold text-primary-foreground w-full sm:w-auto shrink-0"
+                  className="h-12 px-6 font-semibold text-primary-foreground"
                   style={{ background: "var(--gradient-primary)", boxShadow: "var(--shadow-glow)" }}
                 >
                   {starting || status?.status === "running" ? (
@@ -204,7 +204,7 @@ function Index() {
                   value={[limit]}
                   onValueChange={([v]) => setLimit(v)}
                   min={1}
-                  max={100}
+                  max={50}
                   step={1}
                   disabled={status?.status === "running"}
                 />
@@ -227,13 +227,13 @@ function Index() {
 
         {status && (
           <Card
-            className="mt-6 p-4 sm:p-6 md:p-8 backdrop-blur-xl bg-card/70 border-border animate-in fade-in"
+            className="mt-6 p-6 md:p-8 backdrop-blur-xl bg-card/70 border-border animate-in fade-in"
             style={{ boxShadow: "var(--shadow-card)" }}
           >
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-5 gap-4">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 sm:gap-3 mb-1 flex-wrap">
-                  <h2 className="text-xl sm:text-2xl font-bold">
+            <div className="flex items-start justify-between mb-5 flex-wrap gap-4">
+              <div>
+                <div className="flex items-center gap-3 mb-1">
+                  <h2 className="text-2xl font-bold">
                     {status.status === "running" && "Cloning…"}
                     {status.status === "completed" && "Clone ready"}
                     {status.status === "failed" && "Crawl failed"}
@@ -250,11 +250,11 @@ function Index() {
                     {status.status}
                   </span>
                 </div>
-                <p className="text-xs sm:text-sm text-muted-foreground font-mono truncate">job {status.id}</p>
+                <p className="text-sm text-muted-foreground font-mono">job {status.id}</p>
               </div>
-              <div className="flex flex-col sm:flex-row gap-2 sm:shrink-0">
+              <div className="flex gap-2">
                 {previewUrl && (
-                  <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
+                  <Button asChild variant="outline" size="lg">
                     <a href={previewUrl} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="w-4 h-4 mr-2" /> Open in new tab
                     </a>
@@ -264,7 +264,7 @@ function Index() {
                   <Button
                     onClick={handleDownload}
                     size="lg"
-                    className="font-semibold text-primary-foreground w-full sm:w-auto"
+                    className="font-semibold text-primary-foreground"
                     style={{ background: "var(--gradient-primary)", boxShadow: "var(--shadow-glow)" }}
                   >
                     <Download className="w-4 h-4 mr-2" /> Download ZIP
@@ -315,7 +315,7 @@ function Index() {
                     key={iframeKey}
                     src={previewUrl}
                     title="Live clone preview"
-                    className="w-full h-[320px] sm:h-[420px] md:h-[520px] bg-white"
+                    className="w-full h-[520px] bg-white"
                     sandbox="allow-same-origin allow-scripts allow-forms"
                   />
                 </div>

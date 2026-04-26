@@ -185,11 +185,7 @@ async function runCrawl(job: Job, limit: number, includeAssets: boolean) {
     appendLog(job, "Starting Firecrawl crawl…");
     const started = await firecrawl.startCrawl(job.url, {
       limit,
-      maxDiscoveryDepth: 5,
-      crawlEntireDomain: true,
-      allowSubdomains: false,
-      sitemap: "include",
-      scrapeOptions: { formats: ["html", "links"], onlyMainContent: false },
+      scrapeOptions: { formats: ["html", "links"] },
     });
     const jobId = (started as any).id || (started as any).jobId;
     if (!jobId) throw new Error("Failed to start crawl");
@@ -269,7 +265,7 @@ export const startCrawl = createServerFn({ method: "POST" })
     new URL(url); // validate
     return {
       url,
-      limit: Math.min(Math.max(Number(d.limit) || 10, 1), 100),
+      limit: Math.min(Math.max(Number(d.limit) || 10, 1), 50),
       includeAssets: !!d.includeAssets,
     };
   })
