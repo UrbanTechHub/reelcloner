@@ -90,7 +90,7 @@ function rewriteHtml(html: string, pageUrl: string, baseHost: string, jobId: str
   });
 
   // Inline a tiny banner so the live preview shows it's a clone.
-  const banner = `<div style="position:fixed;top:0;left:0;right:0;z-index:2147483647;background:#000;color:#fff;font:600 12px/1.6 system-ui,sans-serif;text-align:center;padding:6px;border-bottom:1px solid #fff;pointer-events:none;">ReelzCloner live preview · job ${jobId}</div><div style="height:32px"></div>`;
+  const banner = `<div style="position:fixed;top:0;left:0;right:0;z-index:2147483647;background:#0b0c10;color:#7df9ff;font:600 12px/1.6 system-ui,sans-serif;text-align:center;padding:6px;border-bottom:1px solid #7df9ff;pointer-events:none;">SiteSnatch live preview · job ${jobId}</div><div style="height:32px"></div>`;
   out = out.replace(/<body([^>]*)>/i, (_m, attrs) => `<body${attrs}>${banner}`);
   return out;
 }
@@ -155,7 +155,7 @@ async function downloadAssets(job: Job, urls: Set<string>) {
         try {
           const res = await fetch(u, {
             signal: AbortSignal.timeout(15000),
-            headers: { "user-agent": "Mozilla/5.0 ReelzCloner/1.0" },
+            headers: { "user-agent": "Mozilla/5.0 SiteSnatch/1.0" },
           });
           if (!res.ok) return;
           const path = sanitizePath(u, job.baseHost);
@@ -182,23 +182,14 @@ async function runCrawl(job: Job, limit: number, includeAssets: boolean) {
     if (!apiKey) throw new Error("FIRECRAWL_API_KEY not configured");
     const firecrawl = new Firecrawl({ apiKey });
 
-    appendLog(job, "Starting crawl… (waiting for intro animations & dynamic content)");
+    appendLog(job, "Starting Firecrawl crawl…");
     const started = await firecrawl.startCrawl(job.url, {
       limit,
       maxDiscoveryDepth: 5,
       crawlEntireDomain: true,
       allowSubdomains: false,
       sitemap: "include",
-      scrapeOptions: {
-        formats: ["html", "rawHtml", "links"],
-        onlyMainContent: false,
-        // Wait for intro animations / hero videos / hydration to settle before snapshot
-        waitFor: 4500,
-        // Render with full browser so client-side JS (intros, sliders) executes
-        mobile: false,
-        blockAds: true,
-        skipTlsVerification: false,
-      } as any,
+      scrapeOptions: { formats: ["html", "links"], onlyMainContent: false },
     });
     const jobId = (started as any).id || (started as any).jobId;
     if (!jobId) throw new Error("Failed to start crawl");

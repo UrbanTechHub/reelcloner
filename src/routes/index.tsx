@@ -28,10 +28,10 @@ export const Route = createFileRoute("/")({
   component: Index,
   head: () => ({
     meta: [
-      { title: "ReelzCloner — Clone Any Website in One Click" },
+      { title: "SiteSnatch — Clone Any Website in One Click" },
       {
         name: "description",
-        content: "Crawl and download any website's HTML, CSS, JS, images, intros and more as a ZIP. Live preview while crawling.",
+        content: "Crawl and download any website's HTML, CSS, JS, images and more as a ZIP. Live preview while crawling.",
       },
     ],
   }),
@@ -142,7 +142,7 @@ function Index() {
         <div className="text-center mb-8 sm:mb-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full bg-card/60 border border-border backdrop-blur-sm mb-4 sm:mb-6">
             <Sparkles className="w-3.5 h-3.5 text-primary" />
-            <span className="text-[11px] sm:text-xs font-medium text-muted-foreground">ReelzCloner · Live preview while it clones</span>
+            <span className="text-[11px] sm:text-xs font-medium text-muted-foreground">Live preview · Powered by Firecrawl</span>
           </div>
           <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight mb-3 sm:mb-4 leading-[1.05]">
             <span className="bg-clip-text text-transparent" style={{ backgroundImage: "var(--gradient-primary)" }}>
