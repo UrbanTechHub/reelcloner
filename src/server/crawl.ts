@@ -186,7 +186,7 @@ async function runCrawl(job: Job, limit: number, includeAssets: boolean) {
     const started = await firecrawl.startCrawl(job.url, {
       limit,
       maxDiscoveryDepth: 5,
-      allowBackwardLinks: true,
+      crawlEntireDomain: true,
       allowSubdomains: false,
       sitemap: "include",
       scrapeOptions: { formats: ["html", "links"], onlyMainContent: false },
