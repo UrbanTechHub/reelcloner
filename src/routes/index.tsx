@@ -17,7 +17,7 @@ export const Route = createFileRoute("/")({
   component: Index,
   head: () => ({
     meta: [
-      { title: "SiteSnatch — Clone Any Website in One Click" },
+      { title: "REELCLONER — Clone Any Website in One Click" },
       {
         name: "description",
         content: "Crawl and download any website's HTML, CSS, JS, and images as a ZIP. Powered by Firecrawl.",
