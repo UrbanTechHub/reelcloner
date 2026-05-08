@@ -37,6 +37,7 @@ const JOB_KEY = "reelcloner_job";
 
 function Index() {
   const startFn = useServerFn(startCrawlJob);
+  const statusFn = useServerFn(getCrawlJobStatus);
   const pagesFn = useServerFn(getCrawlPages);
   const assetsFn = useServerFn(fetchAssetBatch);
 
