@@ -17,7 +17,7 @@ export const Route = createFileRoute("/")({
   component: Index,
   head: () => ({
     meta: [
-      { title: "SiteSnatch — Clone Any Website in One Click" },
+      { title: "REELCLONER — Clone Any Website in One Click" },
       {
         name: "description",
         content: "Crawl and download any website's HTML, CSS, JS, and images as a ZIP. Powered by Firecrawl.",
@@ -40,6 +40,61 @@ function Index() {
   const [includeAssets, setIncludeAssets] = useState(true);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
+  const [unlocked, setUnlocked] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return sessionStorage.getItem("reelcloner_unlocked") === "1";
+  });
+  const [pin, setPin] = useState("");
+
+  const handleUnlock = () => {
+    if (pin === "3458") {
+      sessionStorage.setItem("reelcloner_unlocked", "1");
+      setUnlocked(true);
+    } else {
+      toast.error("Incorrect PIN");
+      setPin("");
+    }
+  };
+
+  if (!unlocked) {
+    return (
+      <main className="relative min-h-screen flex items-center justify-center px-4">
+        <Toaster theme="dark" />
+        <div
+          className="absolute inset-0 -z-10 opacity-40"
+          style={{ backgroundImage: `url(${heroBg})`, backgroundSize: "cover", backgroundPosition: "center" }}
+        />
+        <div className="absolute inset-0 -z-10" style={{ background: "var(--gradient-hero)" }} />
+        <div className="absolute inset-0 -z-10 bg-background/70" />
+        <Card className="p-8 w-full max-w-sm backdrop-blur-xl bg-card/70 border-border" style={{ boxShadow: "var(--shadow-card)" }}>
+          <h1 className="text-3xl font-bold mb-2 text-center">
+            <span className="bg-clip-text text-transparent" style={{ backgroundImage: "var(--gradient-primary)" }}>
+              REELCLONER
+            </span>
+          </h1>
+          <p className="text-sm text-muted-foreground text-center mb-6">Enter access PIN to continue</p>
+          <Input
+            type="password"
+            inputMode="numeric"
+            placeholder="••••"
+            value={pin}
+            onChange={(e) => setPin(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleUnlock()}
+            className="text-center text-lg h-12 mb-4 tracking-widest"
+            autoFocus
+          />
+          <Button
+            onClick={handleUnlock}
+            className="w-full h-12 font-semibold"
+            style={{ background: "var(--gradient-primary)", boxShadow: "var(--shadow-glow)" }}
+          >
+            Unlock
+          </Button>
+        </Card>
+      </main>
+    );
+  }
+
 
   const handleCrawl = async () => {
     if (!url.trim()) {
