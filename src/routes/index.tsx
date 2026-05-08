@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { startCrawlJob, getCrawlJobStatus, buildCrawlZip } from "@/server/crawl";
+import { startCrawlJob, getCrawlJobStatus, getCrawlPages, fetchAssetBatch } from "@/server/crawl";
+import JSZip from "jszip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
