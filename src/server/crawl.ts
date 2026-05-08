@@ -78,7 +78,12 @@ export const startCrawlJob = createServerFn({ method: "POST" })
     const baseHost = new URL(data.url).host;
     const job = await fc.startCrawl(data.url, {
       limit: data.limit,
-      scrapeOptions: { formats: ["html", "links"] },
+      scrapeOptions: {
+        formats: ["html", "links"],
+        // Wait for client-side preloaders / hydration to finish before snapshotting
+        waitFor: 3500,
+        onlyMainContent: false,
+      },
     });
     const jobId = (job as any).id || (job as any).jobId;
     if (!jobId) throw new Error("Failed to start crawl");
