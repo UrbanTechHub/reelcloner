@@ -1,8 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import Firecrawl from "@mendable/firecrawl-js";
-import JSZip from "jszip";
 
-function sanitizePath(urlStr: string, baseHost: string): string | null {
+export function sanitizePath(urlStr: string, baseHost: string): string | null {
   try {
     const u = new URL(urlStr);
     if (u.host !== baseHost) return null;
@@ -75,19 +74,17 @@ export const startCrawlJob = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }) => {
     const fc = getClient();
-    const baseHost = new URL(data.url).host;
     const job = await fc.startCrawl(data.url, {
       limit: data.limit,
       scrapeOptions: {
         formats: ["html", "links"],
-        // Wait for client-side preloaders / hydration to finish before snapshotting
         waitFor: 3500,
         onlyMainContent: false,
       },
     });
     const jobId = (job as any).id || (job as any).jobId;
     if (!jobId) throw new Error("Failed to start crawl");
-    return { jobId, baseHost, includeAssets: data.includeAssets };
+    return { jobId, baseHost: new URL(data.url).host, includeAssets: data.includeAssets };
   });
 
 export const getCrawlJobStatus = createServerFn({ method: "POST" })
@@ -106,7 +103,8 @@ export const getCrawlJobStatus = createServerFn({ method: "POST" })
     };
   });
 
-export const buildCrawlZip = createServerFn({ method: "POST" })
+// Returns rewritten HTML pages + asset URL list. No asset downloads here — fast & under timeout.
+export const getCrawlPages = createServerFn({ method: "POST" })
   .inputValidator((d: { jobId: string; baseHost: string; includeAssets: boolean }) => {
     if (!d?.jobId || !d?.baseHost) throw new Error("jobId & baseHost required");
     return d;
@@ -117,9 +115,8 @@ export const buildCrawlZip = createServerFn({ method: "POST" })
     const pages = ((status as any).data || []) as any[];
     if (!pages.length) throw new Error("No pages crawled");
 
-    const zip = new JSZip();
+    const out: { path: string; html: string }[] = [];
     const assetUrls = new Set<string>();
-    const filesAdded: string[] = [];
 
     for (const page of pages) {
       const sourceUrl: string = page.metadata?.sourceURL || page.metadata?.url || "";
@@ -127,53 +124,46 @@ export const buildCrawlZip = createServerFn({ method: "POST" })
       if (!html || !sourceUrl) continue;
       const path = sanitizePath(sourceUrl, data.baseHost);
       if (!path) continue;
-      zip.file(path, rewriteHtml(html, sourceUrl, data.baseHost));
-      filesAdded.push(path);
+      out.push({ path, html: rewriteHtml(html, sourceUrl, data.baseHost) });
       if (data.includeAssets) {
         for (const a of extractAssetUrls(html, sourceUrl)) {
-          if (new URL(a).host === data.baseHost) assetUrls.add(a);
+          try { if (new URL(a).host === data.baseHost) assetUrls.add(a); } catch {}
         }
       }
     }
 
-    if (data.includeAssets && assetUrls.size) {
-      const list = Array.from(assetUrls).slice(0, 200);
-      const batch = 8;
-      for (let i = 0; i < list.length; i += batch) {
-        await Promise.all(
-          list.slice(i, i + batch).map(async (u) => {
-            try {
-              const res = await fetch(u, { signal: AbortSignal.timeout(15000) });
-              if (!res.ok) return;
-              const buf = new Uint8Array(await res.arrayBuffer());
-              const path = sanitizePath(u, data.baseHost);
-              if (path) {
-                zip.file(path, buf);
-                filesAdded.push(path);
-              }
-            } catch {}
-          }),
-        );
-      }
-    }
-
-    const blob = await zip.generateAsync({ type: "uint8array", compression: "DEFLATE" });
-    let binary = "";
-    const chunk = 0x8000;
-    for (let i = 0; i < blob.length; i += chunk) {
-      binary += String.fromCharCode(...blob.subarray(i, i + chunk));
-    }
-    const base64 = btoa(binary);
-
     return {
-      base64,
-      filename: `${data.baseHost.replace(/[^a-z0-9.-]/gi, "_")}.zip`,
-      stats: {
-        pages: pages.length,
-        assets: assetUrls.size,
-        files: filesAdded.length,
-        sizeKB: Math.round(blob.length / 1024),
-      },
-      files: filesAdded.slice(0, 100),
+      pages: out,
+      assets: Array.from(assetUrls).slice(0, 300),
+      baseHost: data.baseHost,
     };
+  });
+
+// Fetches a small batch of assets and returns base64 — keeps each call well under timeout.
+export const fetchAssetBatch = createServerFn({ method: "POST" })
+  .inputValidator((d: { urls: string[]; baseHost: string }) => {
+    if (!Array.isArray(d?.urls)) throw new Error("urls required");
+    return { urls: d.urls.slice(0, 8), baseHost: d.baseHost };
+  })
+  .handler(async ({ data }) => {
+    const results = await Promise.all(
+      data.urls.map(async (u) => {
+        try {
+          const res = await fetch(u, { signal: AbortSignal.timeout(10000) });
+          if (!res.ok) return null;
+          const buf = new Uint8Array(await res.arrayBuffer());
+          const path = sanitizePath(u, data.baseHost);
+          if (!path) return null;
+          let bin = "";
+          const chunk = 0x8000;
+          for (let i = 0; i < buf.length; i += chunk) {
+            bin += String.fromCharCode(...buf.subarray(i, i + chunk));
+          }
+          return { path, base64: btoa(bin) };
+        } catch {
+          return null;
+        }
+      }),
+    );
+    return { files: results.filter((x): x is { path: string; base64: string } => !!x) };
   });

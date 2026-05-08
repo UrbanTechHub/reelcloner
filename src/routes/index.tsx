@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { startCrawlJob, getCrawlJobStatus, buildCrawlZip } from "@/server/crawl";
+import { startCrawlJob, getCrawlJobStatus, getCrawlPages, fetchAssetBatch } from "@/server/crawl";
+import JSZip from "jszip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,7 +38,8 @@ const JOB_KEY = "reelcloner_job";
 function Index() {
   const startFn = useServerFn(startCrawlJob);
   const statusFn = useServerFn(getCrawlJobStatus);
-  const buildFn = useServerFn(buildCrawlZip);
+  const pagesFn = useServerFn(getCrawlPages);
+  const assetsFn = useServerFn(fetchAssetBatch);
 
   const [url, setUrl] = useState("");
   const [limit, setLimit] = useState(10);
@@ -79,8 +81,55 @@ function Index() {
         if (s.status === "completed") {
           setBuilding(true);
           try {
-            const r = await buildFn({ data: { jobId: job.jobId, baseHost: job.baseHost, includeAssets: job.includeAssets } });
+            const { pages, assets } = await pagesFn({ data: { jobId: job.jobId, baseHost: job.baseHost, includeAssets: job.includeAssets } });
             if (cancelled) return;
+
+            const zip = new JSZip();
+            const filesAdded: string[] = [];
+            for (const p of pages) {
+              zip.file(p.path, p.html);
+              filesAdded.push(p.path);
+            }
+
+            // Fetch assets in small batches via the server proxy (avoids CORS + per-call timeout)
+            const BATCH = 8;
+            let totalBytes = 0;
+            for (let i = 0; i < assets.length; i += BATCH) {
+              if (cancelled) return;
+              const batch = assets.slice(i, i + BATCH);
+              try {
+                const { files } = await assetsFn({ data: { urls: batch, baseHost: job.baseHost } });
+                for (const f of files) {
+                  const bin = atob(f.base64);
+                  const bytes = new Uint8Array(bin.length);
+                  for (let k = 0; k < bin.length; k++) bytes[k] = bin.charCodeAt(k);
+                  zip.file(f.path, bytes);
+                  filesAdded.push(f.path);
+                  totalBytes += bytes.length;
+                }
+              } catch (err: any) {
+                console.warn("asset batch failed", err?.message);
+              }
+              setProgress({ status: "packaging", completed: Math.min(i + BATCH, assets.length), total: assets.length });
+            }
+
+            const blob = await zip.generateAsync({ type: "uint8array", compression: "DEFLATE" });
+            let bin = "";
+            const chunk = 0x8000;
+            for (let i = 0; i < blob.length; i += chunk) {
+              bin += String.fromCharCode(...blob.subarray(i, i + chunk));
+            }
+            const r: Result = {
+              base64: btoa(bin),
+              filename: `${job.baseHost.replace(/[^a-z0-9.-]/gi, "_")}.zip`,
+              stats: {
+                pages: pages.length,
+                assets: assets.length,
+                files: filesAdded.length,
+                sizeKB: Math.round(blob.length / 1024),
+              },
+              files: filesAdded.slice(0, 100),
+            };
             setResult(r);
             toast.success(`Cloned ${r.stats.pages} pages, ${r.stats.files} files`);
             localStorage.removeItem(JOB_KEY);
@@ -108,7 +157,7 @@ function Index() {
       cancelled = true;
       if (pollRef.current) window.clearInterval(pollRef.current);
     };
-  }, [job, result, statusFn, buildFn]);
+  }, [job, result, statusFn, pagesFn, assetsFn]);
 
   const handleUnlock = () => {
     if (pin === "3458") {
